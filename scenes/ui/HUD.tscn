@@ -1,0 +1,51 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/hud.gd" id="1_hud"]
+
+[node name="HUD" type="CanvasLayer"]
+script = ExtResource("1_hud")
+
+[node name="StaminaBar" type="ProgressBar" parent="."]
+offset_left = 4.0
+offset_top = 4.0
+offset_right = 104.0
+offset_bottom = 14.0
+theme_override_styles/fill = null
+max_value = 100.0
+value = 100.0
+show_percentage = false
+
+[node name="StaminaLabel" type="Label" parent="StaminaBar"]
+offset_left = 0.0
+offset_top = -1.0
+offset_right = 100.0
+offset_bottom = 11.0
+theme_override_font_sizes/font_size = 7
+text = "STA"
+horizontal_alignment = 1
+
+[node name="JointsBar" type="ProgressBar" parent="."]
+offset_left = 4.0
+offset_top = 16.0
+offset_right = 104.0
+offset_bottom = 26.0
+max_value = 100.0
+value = 100.0
+show_percentage = false
+
+[node name="JointsLabel" type="Label" parent="JointsBar"]
+offset_left = 0.0
+offset_top = -1.0
+offset_right = 100.0
+offset_bottom = 11.0
+theme_override_font_sizes/font_size = 7
+text = "JNT"
+horizontal_alignment = 1
+
+[node name="SpeedLabel" type="Label" parent="."]
+offset_left = 4.0
+offset_top = 30.0
+offset_right = 104.0
+offset_bottom = 42.0
+theme_override_font_sizes/font_size = 8
+text = "200"

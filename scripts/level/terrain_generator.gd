@@ -14,6 +14,8 @@ const SEGMENTS: Array[Dictionary] = [
 	{"length": 250.0, "angle": -20.0},  # пологий спуск
 	{"length": 150.0, "angle": 0.0},    # отдых
 	{"length": 250.0, "angle": -35.0},  # крутой спуск
+	{"length": 150.0, "angle": 0.0},    # отдых
+	{"length": 600.0, "angle": -40.0},  # длинный крутой спуск — тест Joints
 	{"length": 300.0, "angle": 0.0},    # ровный финиш
 ]
 
