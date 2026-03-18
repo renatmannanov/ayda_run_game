@@ -1,9 +1,10 @@
-[gd_scene load_steps=5 format=3 uid="uid://main00000001"]
+[gd_scene load_steps=6 format=3 uid="uid://main00000001"]
 
 [ext_resource type="PackedScene" uid="uid://b1player0001" path="res://scenes/player/Player.tscn" id="1_player"]
 [ext_resource type="Script" path="res://scripts/level/terrain_generator.gd" id="2_terrain"]
 [ext_resource type="PackedScene" path="res://scenes/ui/HUD.tscn" id="3_hud"]
 [ext_resource type="Script" path="res://scripts/level/main.gd" id="4_main"]
+[ext_resource type="PackedScene" path="res://scenes/ui/DeathScreen.tscn" id="5_death"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("4_main")
@@ -21,3 +22,5 @@ position_smoothing_enabled = true
 position_smoothing_speed = 5.0
 
 [node name="HUD" parent="." instance=ExtResource("3_hud")]
+
+[node name="DeathScreen" parent="." instance=ExtResource("5_death")]

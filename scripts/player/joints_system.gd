@@ -11,6 +11,8 @@ signal joints_changed(current: float, maximum: float)
 @export var damage_speed_threshold: float = 250.0
 ## Множитель снижения урона при торможении (0.2 = 80% снижение)
 @export var brake_damage_multiplier: float = 0.2
+## Общий множитель урона (для баланса)
+@export var damage_multiplier: float = 40.0
 
 var current_joints: float
 
@@ -25,7 +27,7 @@ func update(delta: float, slope_deg: float, current_speed: float, is_braking: bo
 		return
 
 	var abs_slope: float = abs(slope_deg)
-	var damage: float = (current_speed - damage_speed_threshold) / 100.0 * abs_slope / 45.0 * delta
+	var damage: float = (current_speed - damage_speed_threshold) / 100.0 * abs_slope / 45.0 * damage_multiplier * delta
 
 	# Торможение снижает урон на 80%
 	if is_braking:
