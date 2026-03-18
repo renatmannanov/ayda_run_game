@@ -10,6 +10,9 @@ build/
 Thumbs.db
 desktop.ini
 
+# Docs (рабочие файлы, планы, AI-контекст — не в репо)
+docs/
+
 # IDE
 .vscode/
 *.swp
