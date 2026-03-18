@@ -7,6 +7,7 @@ signal player_died(cause: String)
 @onready var _movement: Node = $MovementController
 @onready var _stamina: Node = $StaminaSystem
 @onready var _joints: Node = $JointsSystem
+@onready var _hitbox: Area2D = $HitboxArea
 
 var _is_dead: bool = false
 # HUD — подключается из main.gd через set_hud()
@@ -20,6 +21,7 @@ func _ready() -> void:
 	_stamina.stamina_changed.connect(_on_stamina_changed)
 	_joints.joints_changed.connect(_on_joints_changed)
 	_movement.speed_changed.connect(_on_speed_changed)
+	_hitbox.area_entered.connect(_on_obstacle_hit)
 
 
 func _physics_process(_delta: float) -> void:
@@ -32,6 +34,22 @@ func _physics_process(_delta: float) -> void:
 ## Подключить HUD снаружи
 func set_hud(hud: Node) -> void:
 	_hud = hud
+
+
+func _on_obstacle_hit(area: Area2D) -> void:
+	if _is_dead:
+		return
+	if area.has_method("take_hit"):
+		var hit_data: Dictionary = area.take_hit()
+		if hit_data.is_empty():
+			return
+		# Потеря скорости
+		_movement.current_speed = maxf(20.0, _movement.current_speed - hit_data["speed_penalty"])
+		# Урон по Joints
+		_joints.current_joints = maxf(0.0, _joints.current_joints - hit_data["joints_damage"])
+		_joints.joints_changed.emit(_joints.current_joints, _joints.max_joints)
+		if _joints.current_joints <= 0.0:
+			_joints.joint_broken.emit()
 
 
 func _on_jumped() -> void:

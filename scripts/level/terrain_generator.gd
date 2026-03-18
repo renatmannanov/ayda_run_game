@@ -25,11 +25,17 @@ const GROUND_DEPTH: float = 200.0
 # Цвет земли
 const GROUND_COLOR: Color = Color(0.3, 0.25, 0.2, 1.0)
 
+## Сцена препятствия
+@export var obstacle_scene: PackedScene
+## Среднее расстояние между препятствиями (px)
+@export var obstacle_spacing: float = 200.0
+
 var _surface_points: PackedVector2Array = PackedVector2Array()
 
 
 func _ready() -> void:
 	_generate_terrain()
+	_spawn_obstacles()
 
 
 func _generate_terrain() -> void:
@@ -74,6 +80,40 @@ func _generate_terrain() -> void:
 	visual.polygon = collision_points
 	visual.color = GROUND_COLOR
 	body.add_child(visual)
+
+
+## Раскидываем препятствия по поверхности
+func _spawn_obstacles() -> void:
+	if obstacle_scene == null:
+		return
+
+	# Проходим по сегментам поверхности и ставим камни
+	var x_cursor: float = 400.0  # не ставить на старте
+	var total_x: float = _surface_points[_surface_points.size() - 1].x - 200.0  # не ставить у финиша
+
+	while x_cursor < total_x:
+		# Случайный разброс от среднего расстояния
+		x_cursor += obstacle_spacing * randf_range(0.5, 1.5)
+		if x_cursor >= total_x:
+			break
+
+		# Находим Y поверхности в этой точке (линейная интерполяция)
+		var y_pos: float = _get_surface_y(x_cursor)
+
+		var obs: Node = obstacle_scene.instantiate()
+		obs.position = Vector2(x_cursor, y_pos)
+		add_child(obs)
+
+
+## Получить Y поверхности для заданного X
+func _get_surface_y(x: float) -> float:
+	for i in range(_surface_points.size() - 1):
+		var p1: Vector2 = _surface_points[i]
+		var p2: Vector2 = _surface_points[i + 1]
+		if x >= p1.x and x <= p2.x:
+			var t: float = (x - p1.x) / (p2.x - p1.x)
+			return lerp(p1.y, p2.y, t)
+	return 0.0
 
 
 ## Возвращает массив точек поверхности для других систем
