@@ -1,0 +1,17 @@
+[gd_scene load_steps=4 format=3 uid="uid://b1player0001"]
+
+[ext_resource type="Script" path="res://scripts/player/player.gd" id="1_player"]
+[ext_resource type="Script" path="res://scripts/player/movement_controller.gd" id="2_movement"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_col"]
+size = Vector2(16, 24)
+
+[node name="Player" type="CharacterBody2D"]
+script = ExtResource("1_player")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_col")
+position = Vector2(0, -12)
+
+[node name="MovementController" type="Node" parent="."]
+script = ExtResource("2_movement")
