@@ -1,27 +1,16 @@
 [gd_scene load_steps=3 format=3 uid="uid://main00000001"]
 
 [ext_resource type="PackedScene" uid="uid://b1player0001" path="res://scenes/player/Player.tscn" id="1_player"]
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_floor"]
-size = Vector2(5000, 32)
+[ext_resource type="Script" path="res://scripts/level/terrain_generator.gd" id="2_terrain"]
 
 [node name="Main" type="Node2D"]
 
-[node name="Floor" type="StaticBody2D" parent="."]
-position = Vector2(2500, 180)
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Floor"]
-shape = SubResource("RectangleShape2D_floor")
-
-[node name="FloorVisual" type="ColorRect" parent="Floor"]
-offset_left = -2500.0
-offset_top = -16.0
-offset_right = 2500.0
-offset_bottom = 16.0
-color = Color(0.3, 0.25, 0.2, 1)
+[node name="Terrain" type="Node2D" parent="."]
+position = Vector2(0, 160)
+script = ExtResource("2_terrain")
 
 [node name="Player" parent="." instance=ExtResource("1_player")]
-position = Vector2(50, 160)
+position = Vector2(50, 140)
 
 [node name="Camera2D" type="Camera2D" parent="Player"]
 offset = Vector2(60, -40)
