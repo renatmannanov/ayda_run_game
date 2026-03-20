@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3 uid="uid://main00000001"]
+[gd_scene load_steps=8 format=3 uid="uid://main00000001"]
 
 [ext_resource type="PackedScene" uid="uid://b1player0001" path="res://scenes/player/Player.tscn" id="1_player"]
 [ext_resource type="Script" path="res://scripts/level/terrain_generator.gd" id="2_terrain"]
@@ -6,6 +6,7 @@
 [ext_resource type="Script" path="res://scripts/level/main.gd" id="4_main"]
 [ext_resource type="PackedScene" path="res://scenes/ui/DeathScreen.tscn" id="5_death"]
 [ext_resource type="PackedScene" path="res://scenes/obstacles/Obstacle.tscn" id="6_obstacle"]
+[ext_resource type="PackedScene" path="res://scenes/level/FinishZone.tscn" id="7_finish"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("4_main")
@@ -14,6 +15,7 @@ script = ExtResource("4_main")
 position = Vector2(0, 160)
 script = ExtResource("2_terrain")
 obstacle_scene = ExtResource("6_obstacle")
+finish_scene = ExtResource("7_finish")
 
 [node name="Player" parent="." instance=ExtResource("1_player")]
 position = Vector2(50, 140)

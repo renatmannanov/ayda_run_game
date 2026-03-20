@@ -4,19 +4,25 @@
 class_name TerrainGenerator
 extends Node2D
 
-# Сегмент рельефа: длина по X и угол наклона в градусах (+ подъём, - спуск)
+# Маршрут Фурманова — старт внизу, финиш на вершине
+# Реальность: ~12 км, набор ~1000м. Тут сжато до ~1 мин для тестирования
 const SEGMENTS: Array[Dictionary] = [
-	{"length": 300.0, "angle": 0.0},    # ровный старт
-	{"length": 200.0, "angle": 15.0},   # пологий подъём
-	{"length": 150.0, "angle": 0.0},    # отдых
-	{"length": 200.0, "angle": 30.0},   # крутой подъём
-	{"length": 200.0, "angle": 0.0},    # отдых
-	{"length": 250.0, "angle": -20.0},  # пологий спуск
-	{"length": 150.0, "angle": 0.0},    # отдых
-	{"length": 250.0, "angle": -35.0},  # крутой спуск
-	{"length": 150.0, "angle": 0.0},    # отдых
-	{"length": 600.0, "angle": -40.0},  # длинный крутой спуск — тест Joints
-	{"length": 300.0, "angle": 0.0},    # ровный финиш
+	# === Старт (пос. Фурманова, ~1100м) ===
+	{"length": 200.0, "angle": 0.0},     # разбег по ровному
+	# === Подъём по тропе к гребню ===
+	{"length": 200.0, "angle": 10.0},    # пологий заход, разогрев
+	{"length": 250.0, "angle": 20.0},    # тропа набирает крутизну
+	{"length": 100.0, "angle": 5.0},     # небольшая передышка
+	{"length": 300.0, "angle": 25.0},    # основной подъём — тут жрёт stamina
+	{"length": 150.0, "angle": 30.0},    # крутой участок перед гребнем
+	# === Гребень (~1800м) — передышка ===
+	{"length": 120.0, "angle": 0.0},     # ровный гребень, восстановление
+	{"length": 100.0, "angle": -5.0},    # лёгкий спуск, ещё отдых
+	# === Финальный подъём на вершину (~2050м) ===
+	{"length": 200.0, "angle": 15.0},    # второе дыхание
+	{"length": 250.0, "angle": 28.0},    # финальный рывок
+	# === Вершина — финиш! ===
+	{"length": 150.0, "angle": 0.0},     # вершина, финишная площадка
 ]
 
 # Глубина земли вниз от поверхности (для визуала)
@@ -27,8 +33,12 @@ const GROUND_COLOR: Color = Color(0.3, 0.25, 0.2, 1.0)
 
 ## Сцена препятствия
 @export var obstacle_scene: PackedScene
+## Сцена финишной зоны
+@export var finish_scene: PackedScene
 ## Среднее расстояние между препятствиями (px)
 @export var obstacle_spacing: float = 200.0
+
+signal player_finished()
 
 var _surface_points: PackedVector2Array = PackedVector2Array()
 
@@ -36,6 +46,7 @@ var _surface_points: PackedVector2Array = PackedVector2Array()
 func _ready() -> void:
 	_generate_terrain()
 	_spawn_obstacles()
+	_spawn_finish()
 
 
 func _generate_terrain() -> void:
@@ -114,6 +125,20 @@ func _get_surface_y(x: float) -> float:
 			var t: float = (x - p1.x) / (p2.x - p1.x)
 			return lerp(p1.y, p2.y, t)
 	return 0.0
+
+
+## Ставим финишный флаг в конце маршрута
+func _spawn_finish() -> void:
+	if finish_scene == null:
+		return
+	var finish_x: float = _surface_points[_surface_points.size() - 1].x - 100.0
+	var finish_y: float = _get_surface_y(finish_x)
+	var finish: Node2D = finish_scene.instantiate()
+	finish.position = Vector2(finish_x, finish_y)
+	add_child(finish)
+	# Прокидываем сигнал финиша наверх
+	if finish.has_signal("player_finished"):
+		finish.player_finished.connect(func() -> void: player_finished.emit())
 
 
 ## Возвращает массив точек поверхности для других систем
