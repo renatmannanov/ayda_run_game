@@ -1,59 +1,68 @@
 # player.gd
-# Главный скрипт игрока — координирует компоненты
+# Координирует компоненты бегуна
 extends CharacterBody2D
 
 signal player_died(cause: String)
+signal player_finished_race()
 
 @onready var _movement: Node = $MovementController
 @onready var _stamina: Node = $StaminaSystem
-@onready var _joints: Node = $JointsSystem
-@onready var _hitbox: Area2D = $HitboxArea
 @onready var _sprite: Node2D = $PlayerSprite
 
 var _is_dead: bool = false
-# HUD — подключается из main.gd через set_hud()
 var _hud: Node = null
+var _start_x: float = 0.0
+var _total_km: float = 0.0
+var _terrain_length_px: float = 0.0
 
 
 func _ready() -> void:
 	_movement.jumped.connect(_on_jumped)
 	_stamina.stamina_depleted.connect(_on_stamina_depleted)
-	_joints.joint_broken.connect(_on_joint_broken)
 	_stamina.stamina_changed.connect(_on_stamina_changed)
-	_joints.joints_changed.connect(_on_joints_changed)
 	_movement.speed_changed.connect(_on_speed_changed)
-	_hitbox.area_entered.connect(_on_obstacle_hit)
+	_start_x = global_position.x
 
 
-func _physics_process(_delta: float) -> void:
+func configure(pace_min_km: float, distance_km: float) -> void:
+	_total_km = distance_km
+	_terrain_length_px = Constants.km_to_terrain(distance_km)
+	# Настраиваем движение
+	_movement.base_pace_min_km = pace_min_km
+	_movement.base_speed = Constants.pace_to_speed(pace_min_km)
+	_movement.current_speed = _movement.base_speed
+	# Настраиваем stamina
+	_stamina.configure(distance_km, pace_min_km)
+
+
+func _physics_process(delta: float) -> void:
 	if _is_dead:
 		return
-	_stamina.update(_delta, _movement.current_slope_deg, _movement.is_boosting)
-	_joints.update(_delta, _movement.current_slope_deg, _movement.current_speed, _movement.is_braking)
-	# Обновляем спрайт
+	_stamina.update(delta, _movement.current_speed)
 	_sprite.set_jumping(not is_on_floor())
 	_sprite.set_run_speed(_movement.current_speed)
 
+	# Дистанция по позиции на terrain
+	var progress_px: float = global_position.x - _start_x
+	var progress_km: float = clampf(progress_px / _terrain_length_px * _total_km, 0.0, _total_km)
+	if _hud and _hud.has_method("update_distance"):
+		_hud.update_distance(progress_km, _total_km)
 
-## Подключить HUD снаружи
+	# Финиш
+	if progress_px >= _terrain_length_px:
+		_finish()
+
+
 func set_hud(hud: Node) -> void:
 	_hud = hud
 
 
-func _on_obstacle_hit(area: Area2D) -> void:
+func _finish() -> void:
 	if _is_dead:
 		return
-	if area.has_method("take_hit"):
-		var hit_data: Dictionary = area.take_hit()
-		if hit_data.is_empty():
-			return
-		# Потеря скорости
-		_movement.current_speed = maxf(20.0, _movement.current_speed - hit_data["speed_penalty"])
-		# Урон по Joints
-		_joints.current_joints = maxf(0.0, _joints.current_joints - hit_data["joints_damage"])
-		_joints.joints_changed.emit(_joints.current_joints, _joints.max_joints)
-		if _joints.current_joints <= 0.0:
-			_joints.joint_broken.emit()
+	_is_dead = true
+	_movement.set_physics_process(false)
+	player_finished_race.emit()
 
 
 func _on_jumped() -> void:
@@ -69,25 +78,12 @@ func _on_stamina_depleted() -> void:
 	player_died.emit("Закислился")
 
 
-func _on_joint_broken() -> void:
-	if _is_dead:
-		return
-	_is_dead = true
-	_movement.set_physics_process(false)
-	_sprite.set_dead(true)
-	player_died.emit("Травма колена")
-
-
 func _on_stamina_changed(current: float, maximum: float) -> void:
 	if _hud:
 		_hud.update_stamina(current, maximum)
 
 
-func _on_joints_changed(current: float, maximum: float) -> void:
-	if _hud:
-		_hud.update_joints(current, maximum)
-
-
 func _on_speed_changed(speed: float) -> void:
 	if _hud:
+		# Конвертируем визуальную скорость обратно в темп
 		_hud.update_speed(speed)

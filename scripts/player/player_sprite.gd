@@ -30,6 +30,8 @@ var animation_speed: float = 8.0
 
 
 func _process(delta: float) -> void:
+	# Округляем позицию до целых пикселей — убирает "четверение"
+	position = position.round()
 	if _is_dead:
 		return
 	_frame_timer += delta * animation_speed

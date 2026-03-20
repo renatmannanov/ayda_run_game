@@ -1,86 +1,44 @@
 # terrain_generator.gd
-# Генерирует тестовый рельеф из сегментов с разным наклоном
-# Создаёт StaticBody2D с CollisionPolygon2D + Polygon2D для визуала
+# Генерирует плоский рельеф с км-отметками и финишем
 class_name TerrainGenerator
 extends Node2D
 
-# Маршрут Фурманова — старт внизу, финиш на вершине
-# Реальность: ~12 км, набор ~1000м. Тут сжато до ~1 мин для тестирования
-const SEGMENTS: Array[Dictionary] = [
-	# === Старт (пос. Фурманова, ~1100м) ===
-	{"length": 200.0, "angle": 0.0},     # разбег по ровному
-	# === Подъём по тропе к гребню ===
-	{"length": 200.0, "angle": 10.0},    # пологий заход, разогрев
-	{"length": 250.0, "angle": 20.0},    # тропа набирает крутизну
-	{"length": 100.0, "angle": 5.0},     # небольшая передышка
-	{"length": 300.0, "angle": 25.0},    # основной подъём — тут жрёт stamina
-	{"length": 150.0, "angle": 30.0},    # крутой участок перед гребнем
-	# === Гребень (~1800м) — передышка ===
-	{"length": 120.0, "angle": 0.0},     # ровный гребень, восстановление
-	{"length": 100.0, "angle": -5.0},    # лёгкий спуск, ещё отдых
-	# === Финальный подъём на вершину (~2050м) ===
-	{"length": 200.0, "angle": 15.0},    # второе дыхание
-	{"length": 250.0, "angle": 28.0},    # финальный рывок
-	# === Вершина — финиш! ===
-	{"length": 150.0, "angle": 0.0},     # вершина, финишная площадка
-]
+@export var route_id: int = 0
 
-# Глубина земли вниз от поверхности (для визуала)
 const GROUND_DEPTH: float = 200.0
+const GRASS_COLOR := Color(0.3, 0.55, 0.2)
+const DIRT_COLOR := Color(0.4, 0.3, 0.2)
+const GRASS_THICKNESS: float = 4.0
 
-# Цвета земли (слои)
-const GRASS_COLOR := Color(0.3, 0.55, 0.2)      # трава
-const DIRT_COLOR := Color(0.4, 0.3, 0.2)          # земля
-const ROCK_COLOR := Color(0.35, 0.33, 0.3)        # камень
-const GRASS_THICKNESS: float = 4.0                 # толщина слоя травы
-
-## Сцена препятствия
-@export var obstacle_scene: PackedScene
-## Сцена финишной зоны
-@export var finish_scene: PackedScene
-## Среднее расстояние между препятствиями (px)
-@export var obstacle_spacing: float = 200.0
-
-signal player_finished()
+# Дистанции в км
+const DIST_KM: Array[float] = [5.0, 10.0, 21.0, 42.0]
 
 var _surface_points: PackedVector2Array = PackedVector2Array()
 
 
 func _ready() -> void:
-	_generate_terrain()
-	_spawn_obstacles()
-	_spawn_finish()
+	pass
 
 
-func _generate_terrain() -> void:
-	# Строим точки поверхности из сегментов
+func generate() -> void:
+	var km: float = DIST_KM[route_id] if route_id < DIST_KM.size() else 5.0
+	var total_px: float = Constants.km_to_terrain(km)
+	_build_flat_terrain(total_px)
+	_spawn_km_markers(km)
+	_spawn_finish_line(total_px)
+
+
+func _build_flat_terrain(length_px: float) -> void:
 	_surface_points.clear()
-	var current_pos := Vector2.ZERO
-	_surface_points.append(current_pos)
+	_surface_points.append(Vector2.ZERO)
+	_surface_points.append(Vector2(length_px + 200.0, 0.0))  # +200 запас после финиша
 
-	for seg in SEGMENTS:
-		var angle_rad: float = deg_to_rad(-seg["angle"])  # минус т.к. Y вниз в Godot
-		var dx: float = seg["length"]
-		var dy: float = tan(angle_rad) * dx
-		current_pos += Vector2(dx, dy)
-		_surface_points.append(current_pos)
-
-	# Создаём полигон коллизии (поверхность + дно)
 	var collision_points := PackedVector2Array()
-	# Верхние точки (поверхность)
 	for point in _surface_points:
 		collision_points.append(point)
-	# Нижние точки (дно, справа налево)
-	var last_x: float = _surface_points[_surface_points.size() - 1].x
-	var max_y: float = 0.0
-	for point in _surface_points:
-		if point.y > max_y:
-			max_y = point.y
-	var bottom_y: float = max_y + GROUND_DEPTH
-	collision_points.append(Vector2(last_x, bottom_y))
-	collision_points.append(Vector2(0.0, bottom_y))
+	collision_points.append(Vector2(length_px + 200.0, GROUND_DEPTH))
+	collision_points.append(Vector2(0.0, GROUND_DEPTH))
 
-	# StaticBody2D с коллизией
 	var body := StaticBody2D.new()
 	body.name = "TerrainBody"
 	add_child(body)
@@ -89,73 +47,60 @@ func _generate_terrain() -> void:
 	col_shape.polygon = collision_points
 	body.add_child(col_shape)
 
-	# Визуал — земля (основной полигон)
-	var dirt_visual := Polygon2D.new()
-	dirt_visual.polygon = collision_points
-	dirt_visual.color = DIRT_COLOR
-	body.add_child(dirt_visual)
+	var dirt := Polygon2D.new()
+	dirt.polygon = collision_points
+	dirt.color = DIRT_COLOR
+	body.add_child(dirt)
 
-	# Визуал — трава (тонкая полоска по поверхности)
 	var grass_points := PackedVector2Array()
 	for point in _surface_points:
 		grass_points.append(point)
-	# Обратный проход чуть ниже
 	for i in range(_surface_points.size() - 1, -1, -1):
 		grass_points.append(_surface_points[i] + Vector2(0, GRASS_THICKNESS))
-	var grass_visual := Polygon2D.new()
-	grass_visual.polygon = grass_points
-	grass_visual.color = GRASS_COLOR
-	body.add_child(grass_visual)
+	var grass := Polygon2D.new()
+	grass.polygon = grass_points
+	grass.color = GRASS_COLOR
+	body.add_child(grass)
 
 
-## Раскидываем препятствия по поверхности
-func _spawn_obstacles() -> void:
-	if obstacle_scene == null:
-		return
-
-	# Проходим по сегментам поверхности и ставим камни
-	var x_cursor: float = 400.0  # не ставить на старте
-	var total_x: float = _surface_points[_surface_points.size() - 1].x - 200.0  # не ставить у финиша
-
-	while x_cursor < total_x:
-		# Случайный разброс от среднего расстояния
-		x_cursor += obstacle_spacing * randf_range(0.5, 1.5)
-		if x_cursor >= total_x:
-			break
-
-		# Находим Y поверхности в этой точке (линейная интерполяция)
-		var y_pos: float = _get_surface_y(x_cursor)
-
-		var obs: Node = obstacle_scene.instantiate()
-		obs.position = Vector2(x_cursor, y_pos)
-		add_child(obs)
-
-
-## Получить Y поверхности для заданного X
-func _get_surface_y(x: float) -> float:
-	for i in range(_surface_points.size() - 1):
-		var p1: Vector2 = _surface_points[i]
-		var p2: Vector2 = _surface_points[i + 1]
-		if x >= p1.x and x <= p2.x:
-			var t: float = (x - p1.x) / (p2.x - p1.x)
-			return lerp(p1.y, p2.y, t)
-	return 0.0
+func _spawn_km_markers(total_km: float) -> void:
+	var km_px: float = Constants.KM_TO_PX
+	for km in range(1, int(total_km) + 1):
+		var x: float = km * km_px
+		var marker := Node2D.new()
+		marker.position = Vector2(x, 0.0)
+		add_child(marker)
+		# Вертикальная линия
+		var line := Line2D.new()
+		line.add_point(Vector2(0, -40))
+		line.add_point(Vector2(0, 0))
+		line.width = 1.0
+		line.default_color = Color(1, 1, 1, 0.4)
+		marker.add_child(line)
+		# Текст
+		var label := Label.new()
+		label.text = "%d" % km
+		label.position = Vector2(-4, -52)
+		label.add_theme_font_size_override("font_size", 8)
+		label.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
+		marker.add_child(label)
 
 
-## Ставим финишный флаг в конце маршрута
-func _spawn_finish() -> void:
-	if finish_scene == null:
-		return
-	var finish_x: float = _surface_points[_surface_points.size() - 1].x - 100.0
-	var finish_y: float = _get_surface_y(finish_x)
-	var finish: Node2D = finish_scene.instantiate()
-	finish.position = Vector2(finish_x, finish_y)
+func _spawn_finish_line(total_px: float) -> void:
+	var finish := Node2D.new()
+	finish.position = Vector2(total_px, 0.0)
 	add_child(finish)
-	# Прокидываем сигнал финиша наверх
-	if finish.has_signal("player_finished"):
-		finish.player_finished.connect(func() -> void: player_finished.emit())
-
-
-## Возвращает массив точек поверхности для других систем
-func get_surface_points() -> PackedVector2Array:
-	return _surface_points
+	# Красная линия
+	var line := Line2D.new()
+	line.add_point(Vector2(0, -60))
+	line.add_point(Vector2(0, 0))
+	line.width = 3.0
+	line.default_color = Color(1, 0.2, 0.2, 0.9)
+	finish.add_child(line)
+	# Текст
+	var label := Label.new()
+	label.text = "FINISH"
+	label.position = Vector2(-14, -72)
+	label.add_theme_font_size_override("font_size", 8)
+	label.add_theme_color_override("font_color", Color(1, 0.2, 0.2))
+	finish.add_child(label)

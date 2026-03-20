@@ -15,6 +15,10 @@ config/description="Trail running roguelite side-scroller"
 run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.6", "GL Compatibility")
 
+[autoload]
+
+GameState="*res://scripts/globals/game_state.gd"
+
 [display]
 
 window/size/viewport_width=320

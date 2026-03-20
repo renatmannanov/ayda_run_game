@@ -1,13 +1,12 @@
-[gd_scene load_steps=9 format=3 uid="uid://main00000001"]
+[gd_scene load_steps=7 format=3 uid="uid://main00000001"]
 
 [ext_resource type="PackedScene" uid="uid://b1player0001" path="res://scenes/player/Player.tscn" id="1_player"]
 [ext_resource type="Script" path="res://scripts/level/terrain_generator.gd" id="2_terrain"]
 [ext_resource type="PackedScene" path="res://scenes/ui/HUD.tscn" id="3_hud"]
 [ext_resource type="Script" path="res://scripts/level/main.gd" id="4_main"]
 [ext_resource type="PackedScene" path="res://scenes/ui/DeathScreen.tscn" id="5_death"]
-[ext_resource type="PackedScene" path="res://scenes/obstacles/Obstacle.tscn" id="6_obstacle"]
-[ext_resource type="PackedScene" path="res://scenes/level/FinishZone.tscn" id="7_finish"]
 [ext_resource type="Script" path="res://scripts/level/parallax_background.gd" id="8_parallax"]
+[ext_resource type="PackedScene" path="res://scenes/ui/RouteSelect.tscn" id="9_route"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("4_main")
@@ -18,8 +17,6 @@ script = ExtResource("8_parallax")
 [node name="Terrain" type="Node2D" parent="."]
 position = Vector2(0, 160)
 script = ExtResource("2_terrain")
-obstacle_scene = ExtResource("6_obstacle")
-finish_scene = ExtResource("7_finish")
 
 [node name="Player" parent="." instance=ExtResource("1_player")]
 position = Vector2(50, 140)
@@ -32,3 +29,5 @@ position_smoothing_speed = 5.0
 [node name="HUD" parent="." instance=ExtResource("3_hud")]
 
 [node name="DeathScreen" parent="." instance=ExtResource("5_death")]
+
+[node name="RouteSelect" parent="." instance=ExtResource("9_route")]
