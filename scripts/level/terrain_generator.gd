@@ -28,8 +28,11 @@ const SEGMENTS: Array[Dictionary] = [
 # Глубина земли вниз от поверхности (для визуала)
 const GROUND_DEPTH: float = 200.0
 
-# Цвет земли
-const GROUND_COLOR: Color = Color(0.3, 0.25, 0.2, 1.0)
+# Цвета земли (слои)
+const GRASS_COLOR := Color(0.3, 0.55, 0.2)      # трава
+const DIRT_COLOR := Color(0.4, 0.3, 0.2)          # земля
+const ROCK_COLOR := Color(0.35, 0.33, 0.3)        # камень
+const GRASS_THICKNESS: float = 4.0                 # толщина слоя травы
 
 ## Сцена препятствия
 @export var obstacle_scene: PackedScene
@@ -86,11 +89,23 @@ func _generate_terrain() -> void:
 	col_shape.polygon = collision_points
 	body.add_child(col_shape)
 
-	# Визуал — Polygon2D
-	var visual := Polygon2D.new()
-	visual.polygon = collision_points
-	visual.color = GROUND_COLOR
-	body.add_child(visual)
+	# Визуал — земля (основной полигон)
+	var dirt_visual := Polygon2D.new()
+	dirt_visual.polygon = collision_points
+	dirt_visual.color = DIRT_COLOR
+	body.add_child(dirt_visual)
+
+	# Визуал — трава (тонкая полоска по поверхности)
+	var grass_points := PackedVector2Array()
+	for point in _surface_points:
+		grass_points.append(point)
+	# Обратный проход чуть ниже
+	for i in range(_surface_points.size() - 1, -1, -1):
+		grass_points.append(_surface_points[i] + Vector2(0, GRASS_THICKNESS))
+	var grass_visual := Polygon2D.new()
+	grass_visual.polygon = grass_points
+	grass_visual.color = GRASS_COLOR
+	body.add_child(grass_visual)
 
 
 ## Раскидываем препятствия по поверхности

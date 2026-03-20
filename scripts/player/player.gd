@@ -8,6 +8,7 @@ signal player_died(cause: String)
 @onready var _stamina: Node = $StaminaSystem
 @onready var _joints: Node = $JointsSystem
 @onready var _hitbox: Area2D = $HitboxArea
+@onready var _sprite: Node2D = $PlayerSprite
 
 var _is_dead: bool = false
 # HUD — подключается из main.gd через set_hud()
@@ -29,6 +30,9 @@ func _physics_process(_delta: float) -> void:
 		return
 	_stamina.update(_delta, _movement.current_slope_deg, _movement.is_boosting)
 	_joints.update(_delta, _movement.current_slope_deg, _movement.current_speed, _movement.is_braking)
+	# Обновляем спрайт
+	_sprite.set_jumping(not is_on_floor())
+	_sprite.set_run_speed(_movement.current_speed)
 
 
 ## Подключить HUD снаружи
@@ -61,6 +65,7 @@ func _on_stamina_depleted() -> void:
 		return
 	_is_dead = true
 	_movement.set_physics_process(false)
+	_sprite.set_dead(true)
 	player_died.emit("Закислился")
 
 
@@ -69,6 +74,7 @@ func _on_joint_broken() -> void:
 		return
 	_is_dead = true
 	_movement.set_physics_process(false)
+	_sprite.set_dead(true)
 	player_died.emit("Травма колена")
 
 
@@ -85,8 +91,3 @@ func _on_joints_changed(current: float, maximum: float) -> void:
 func _on_speed_changed(speed: float) -> void:
 	if _hud:
 		_hud.update_speed(speed)
-
-
-# Белый прямоугольник как placeholder
-func _draw() -> void:
-	draw_rect(Rect2(-8, -24, 16, 24), Color.WHITE)

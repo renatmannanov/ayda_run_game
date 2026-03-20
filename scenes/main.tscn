@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3 uid="uid://main00000001"]
+[gd_scene load_steps=9 format=3 uid="uid://main00000001"]
 
 [ext_resource type="PackedScene" uid="uid://b1player0001" path="res://scenes/player/Player.tscn" id="1_player"]
 [ext_resource type="Script" path="res://scripts/level/terrain_generator.gd" id="2_terrain"]
@@ -7,9 +7,13 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/DeathScreen.tscn" id="5_death"]
 [ext_resource type="PackedScene" path="res://scenes/obstacles/Obstacle.tscn" id="6_obstacle"]
 [ext_resource type="PackedScene" path="res://scenes/level/FinishZone.tscn" id="7_finish"]
+[ext_resource type="Script" path="res://scripts/level/parallax_background.gd" id="8_parallax"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("4_main")
+
+[node name="ParallaxBG" type="CanvasLayer" parent="."]
+script = ExtResource("8_parallax")
 
 [node name="Terrain" type="Node2D" parent="."]
 position = Vector2(0, 160)
